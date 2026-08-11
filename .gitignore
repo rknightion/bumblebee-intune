@@ -4,6 +4,10 @@ docs/superpowers/
 # Claude Code local session state
 /.claude/
 
+# Python bytecode from running the sample scripts or their tests
+__pycache__/
+*.py[cod]
+
 # zensical local build output. The published site is built independently by the
 # rknightion/m7kni-net-site hub from docs/ + docs.toml.
 /site/

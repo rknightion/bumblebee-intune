@@ -1,0 +1,150 @@
+# Loki recording rules for the bumblebee fleet inventory.
+#
+# Apply with:
+#   gcx --context <your-gcx-context> alert ruler groups upsert bumblebee \
+#       -d grafanacloud-logs \
+#       -f deploy/bumblebee_recording_rules.yaml
+#
+# WHY THESE EXIST
+# ---------------
+# LAPTOP-01 alone pushes ~242 MB/day of `record_type="package"` records (259,835
+# records in 24h, measured 2026-08-11). Eight dashboard panels aggregate that
+# raw stream, so every dashboard render full-scans hundreds of MB of logs, and
+# the cost scales with the size of each developer's dependency caches rather
+# than with the size of the fleet. These rules move the aggregation server-side
+# and land it in Mimir, where the panels become ordinary cheap metric queries.
+#
+# THE WINDOW MUST EQUAL THE EVALUATION INTERVAL
+# ---------------------------------------------
+# Every rule uses a [5m] range and the group evaluates every 5m, so each
+# evaluation scans only the five minutes of logs it has not seen before.
+#
+# ...AND IT MUST BE OFFSET, OR IT RACES THE INGEST
+# ------------------------------------------------
+# `offset 10m` is load-bearing. Without it the rule evaluates a window that is
+# still being written, samples whatever fraction has landed, and NEVER REVISITS
+# -- the next evaluation has moved on to the following window, and the push's
+# timestamps are behind it forever.
+#
+# Live-measured 2026-08-11, and the shape of the failure is the point:
+#
+#   host    push size   recorded    ratio
+#   laptop-02      1,611      1,611     exact
+#   LAPTOP-01    216,443     39,456     18%
+#
+# Same rule, same evaluation. The small host's push completes inside one
+# evaluation gap and is exact; the large host's does not. Five ecosystems
+# (homebrew, mcp, agent-skill, editor-extension, browser-extension) vanished
+# from the recorded sample entirely because they are written late in the stream.
+#
+# Nothing errors. The rule stays healthy, the dashboard renders a confident
+# number, and it is wrong by 5x on precisely the host the aggregation exists to
+# make affordable. Verifying against the SMALL host is what makes this look
+# fine -- check the biggest producer or the check is worthless.
+#
+# The offset keeps windows non-overlapping (each evaluation still advances 5m),
+# so it costs nothing; it just reads 10 minutes behind the write head.
+#
+# The obvious-looking alternative -- a [24h] window to "cover the daily
+# inventory run" -- is much WORSE than the problem it replaces: at a 5m
+# interval it would re-scan a full day of logs 288 times a day, roughly 70 GB
+# of scan per day, versus a handful of dashboard renders. Non-overlapping
+# windows are the whole point.
+#
+# Because inventory runs daily, most 5m buckets are empty and only the bucket
+# containing the push carries values. Query these from dashboards with an
+# outer window, e.g.
+#     max_over_time(bumblebee:packages_by_ecosystem:count5m[25h])
+# which reads cheap pre-aggregated series from Mimir instead of raw logs.
+#
+# CARDINALITY
+# -----------
+# ecosystem ~15, package_manager ~12, root_kind ~8, source_type ~15,
+# install_scope 2, direct_dependency 2, profile 2, hosts 3. Worst case is a few
+# hundred series -- deliberately small. Do NOT add package_name or source_file
+# here: a single host emits tens of thousands of distinct packages and that
+# would be a cardinality incident, not a recording rule. Per-package detail
+# stays in Loki, where the dashboard's detail tables query it directly over a
+# narrow window.
+#
+# `profile` is in every package by-clause on purpose: the dashboard exposes a
+# $profile template variable, and a rule that drops the label makes the
+# converted panels silently ignore it. A recording rule that cannot answer the
+# dashboard's own filters does not replace the raw query, it just looks like it
+# does.
+
+name: bumblebee-inventory
+interval: 5m
+rules:
+  # Fleet inventory shape -- the panels that used to full-scan the package stream.
+  - record: bumblebee:packages_by_ecosystem:count5m
+    expr: |
+      sum by (host, profile, ecosystem) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json ecosystem="ecosystem" [5m] offset 10m))
+
+  - record: bumblebee:packages_by_manager:count5m
+    expr: |
+      sum by (host, profile, package_manager) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json package_manager="package_manager" [5m] offset 10m))
+
+  - record: bumblebee:packages_by_root_kind:count5m
+    expr: |
+      sum by (host, profile, root_kind) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json root_kind="root_kind" [5m] offset 10m))
+
+  # `ecosystem` rides along on this one so the source_type -> tier panel can be
+  # served from Mimir without losing its breakdown. source_type and ecosystem
+  # are close to 1:1, so this adds series in the low tens, not a cross product.
+  - record: bumblebee:packages_by_source_type:count5m
+    expr: |
+      sum by (host, profile, source_type, ecosystem) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json source_type="source_type", ecosystem="ecosystem" [5m] offset 10m))
+
+  - record: bumblebee:packages_by_install_scope:count5m
+    expr: |
+      sum by (host, profile, install_scope) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json install_scope="install_scope" [5m] offset 10m))
+
+  - record: bumblebee:packages_by_direct_dependency:count5m
+    expr: |
+      sum by (host, profile, direct_dependency) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json direct_dependency="direct_dependency" [5m] offset 10m))
+
+  - record: bumblebee:packages_total:count5m
+    expr: |
+      sum by (host, profile) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} [5m] offset 10m))
+
+  # Packages carrying ANY lifecycle script. Kept for trend, but it is a weak
+  # signal on its own: 1,012 of the 1,071 that match here are `prepare` only,
+  # which runs on a local `npm install` of the *project*, not on installing the
+  # dependency. Alert and report on packages_install_hooks below instead.
+  - record: bumblebee:packages_lifecycle:count5m
+    expr: |
+      sum by (host, profile, ecosystem) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json ecosystem="ecosystem", has_lifecycle_scripts="has_lifecycle_scripts" | has_lifecycle_scripts="true" [5m] offset 10m))
+
+  # Packages that execute code at INSTALL time -- preinstall / install /
+  # postinstall. This is the highest-signal inventory cut for supply-chain risk:
+  # a malicious release only needs an install hook to run. The `.*install.*`
+  # match deliberately catches all three hooks; `lifecycle_scripts` arrives as a
+  # JSON array and LogQL extracts it as its raw string form, so a substring
+  # match is the correct test here.
+  - record: bumblebee:packages_install_hooks:count5m
+    expr: |
+      sum by (host, profile, ecosystem) (count_over_time({source="bumblebee", record_type="package", mode="inventory"} | json ecosystem="ecosystem", has_lifecycle_scripts="has_lifecycle_scripts", lifecycle_scripts="lifecycle_scripts" | has_lifecycle_scripts="true" | lifecycle_scripts=~".*install.*" [5m] offset 10m))
+
+  # Findings split by the same installed-vs-declared tiers the alert rules use,
+  # so the dashboard and the alerts cannot drift apart.
+  - record: bumblebee:findings_installed:count5m
+    expr: |
+      sum by (host, ecosystem, package_name, version, catalog_id) (count_over_time({source="bumblebee", record_type="finding"} | json ecosystem="ecosystem", package_name="package_name", version="version", catalog_id="catalog_id", source_type="source_type" | source_type!~"npm-lockfile|pnpm-lockfile|yarn-lockfile|bun-lockfile|rubygems-gemfile-lock|composer-lock|go-mod|go-sum|skill-lock|mcp-config" [5m] offset 10m))
+
+  - record: bumblebee:findings_declared_project:count5m
+    expr: |
+      sum by (host, ecosystem, package_name, version, catalog_id) (count_over_time({source="bumblebee", record_type="finding"} | json ecosystem="ecosystem", package_name="package_name", version="version", catalog_id="catalog_id", root_kind="root_kind", source_type="source_type" | source_type=~"npm-lockfile|pnpm-lockfile|yarn-lockfile|bun-lockfile|rubygems-gemfile-lock|composer-lock|go-mod|go-sum|skill-lock|mcp-config" | root_kind="project_root" [5m] offset 10m))
+
+  - record: bumblebee:findings_declared_cache:count5m
+    expr: |
+      sum by (host, ecosystem, package_name, version, catalog_id) (count_over_time({source="bumblebee", record_type="finding"} | json ecosystem="ecosystem", package_name="package_name", version="version", catalog_id="catalog_id", root_kind="root_kind", source_type="source_type" | source_type=~"npm-lockfile|pnpm-lockfile|yarn-lockfile|bun-lockfile|rubygems-gemfile-lock|composer-lock|go-mod|go-sum|skill-lock|mcp-config" | root_kind!="project_root" [5m] offset 10m))
+
+  # Scan health, cheap to record and useful as a long-horizon trend.
+  - record: bumblebee:scans_total:count5m
+    expr: |
+      sum by (host, profile, mode) (count_over_time({source="bumblebee", record_type="scan_summary"} [5m] offset 10m))
+
+  - record: bumblebee:scans_timed_out:count5m
+    expr: |
+      sum by (host, profile, mode) (count_over_time({source="bumblebee", record_type="scan_summary"} | json timed_out="timed_out" | timed_out="true" [5m] offset 10m))

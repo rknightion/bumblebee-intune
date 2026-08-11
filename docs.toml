@@ -4,7 +4,7 @@
 
 [site]
 name = "bumblebee-intune"
-description = "Reference Microsoft Intune deployment for Bumblebee: configuration profiles, policies, assignment strategy and deployment guidance"
+description = "Deploying the Bumblebee supply-chain scanner to macOS endpoints with Microsoft Intune: scan architecture, Full Disk Access, exposure catalogs, telemetry and alerting"
 author = "Rob Knighton"
 keywords = [
     "microsoft intune",
@@ -12,12 +12,14 @@ keywords = [
     "bumblebee",
     "endpoint management",
     "mdm",
-    "configuration profiles",
-    "compliance policy",
-    "device management",
-    "entra id",
-    "windows management",
     "macos management",
+    "supply chain security",
+    "software bill of materials",
+    "pppc",
+    "tcc",
+    "full disk access",
+    "launchdaemon",
+    "grafana loki",
     "reference deployment",
 ]
 
@@ -28,14 +30,28 @@ Home = "index.md"
 "Getting Started" = "getting-started.md"
 
 [[site.nav]]
-Reference = [
-    { "Configuration Profiles" = "configuration-profiles.md" },
-    { Policies = "policies.md" },
-    { Samples = "samples.md" },
+"How it works" = [
+    { "Scan architecture" = "architecture.md" },
+    { "Installation & upgrades" = "installation.md" },
+    { "Full Disk Access" = "full-disk-access.md" },
+    { "Exposure catalogs" = "exposure-catalogs.md" },
+]
+
+[[site.nav]]
+Observability = [
+    { Telemetry = "telemetry.md" },
+    { Alerting = "alerting.md" },
+    { Dashboards = "dashboards.md" },
 ]
 
 [[site.nav]]
 Deployment = "deployment.md"
+
+[[site.nav]]
+Reference = [
+    { "Silent failure modes" = "silent-failures.md" },
+    { Samples = "samples.md" },
+]
 
 [assets]
 social_image = "assets/social-card.png"
@@ -50,4 +66,5 @@ name = "GitHub Repository"
 Intune = "intune"
 Bumblebee = "bumblebee"
 Deployment = "deployment"
-Policy = "policy"
+Security = "security"
+Observability = "observability"
