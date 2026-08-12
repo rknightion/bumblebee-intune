@@ -47,11 +47,11 @@ Those two goals fight over the same time budget, and on real developer machines 
 Four daemons, two shapes:
 
 ```
-findings/baseline    every 4h   --findings-only, RunAtLoad
+findings/baseline    every 4h*  --findings-only, RunAtLoad
                                 --exclude pkg/mod --exclude .cargo/registry
                                 max-duration 10m
 
-findings/project     every 4h   --findings-only, RunAtLoad
+findings/project     every 4h*  --findings-only, RunAtLoad
                                 explicit repo roots
                                 max-duration 15m
 
@@ -78,6 +78,19 @@ removed persistently anyway - see [the finding tiers](alerting.md#classify-by-wh
 After the split, the expected steady-state truncation rate is ~0, which turns the timeout alert from
 noise into a regression detector with real headroom.
 
+### \* The findings interval is per-device
+
+4h is the default, not a constant. Build machines and CI runners compete with the scanner for CPU and
+disk, so they can be dropped to daily by shipping a `macOSCustomAppConfiguration` carrying
+`BumblebeeFindingsIntervalSeconds` and scoping it with an assignment filter. The installer reads it
+from `/Library/Managed Preferences/<your-domain>` and falls back to 14400 when it is absent or
+non-numeric.
+
+It has to arrive as a *managed preference* because **you cannot ask a Mac what Intune thinks it is**:
+`profiles show -type enrollment` returns `(null)` on an ADE-enrolled device, so the enrolment profile
+name - the obvious thing to branch on - is not readable from a script at all. Intune evaluates the
+filter server-side and the device just reads the answer.
+
 ## LaunchDaemons, not agents
 
 Run as root LaunchDaemons in the system domain:
@@ -90,6 +103,12 @@ Run as root LaunchDaemons in the system domain:
 <key>LowPriorityIO</key><true/>
 <key>Nice</key><integer>10</integer>
 ```
+
+**`RunAtLoad` is load-bearing, and more so once you raise the interval.** The installer boots out and
+re-bootstraps all four daemons on every run, and Intune runs it daily - so each reload resets the
+`StartInterval` countdown. With `RunAtLoad=no`, a daemon whose interval is at or above the installer
+cadence can be starved indefinitely and simply never scan. `RunAtLoad` is what guarantees roughly one
+scan per installer cycle whatever the interval is.
 
 - **root + `--all-users`** is what makes this a fleet control rather than a per-user tool. A LaunchAgent
   only runs when someone is logged in and only sees that user.

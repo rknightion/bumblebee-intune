@@ -18,10 +18,13 @@
 #   be ringed with an Intune assignment filter.
 #
 # SCAN ARCHITECTURE (two shapes, deliberately split):
-#   - findings  (every 4h, RunAtLoad): bounded fast roots, --findings-only.
-#     Excludes the big read-only dependency caches (Go module cache, Cargo
-#     registry) so it finishes in seconds and detection stays frequent on the
-#     roots that carry executable, actually-installed code.
+#   - findings  (every 4h by default, RunAtLoad): bounded fast roots,
+#     --findings-only. Excludes the big read-only dependency caches (Go module
+#     cache, Cargo registry) so it finishes in seconds and detection stays
+#     frequent on the roots that carry executable, actually-installed code.
+#     The interval is overridable per-device by a managed preference, so build
+#     machines and CI hosts can drop to daily -- see the FINDINGS_INTERVAL block
+#     below, which also explains why this cannot be decided on the device.
 #   - inventory (daily): the SAME roots with NO exclusions plus full package
 #     inventory, on a generous --max-duration. This is the pass that covers
 #     the dependency caches, so cache exposure is still detected -- at a daily
@@ -46,7 +49,7 @@
 # throughput target.
 set -eu
 
-INSTALL_VERSION="2026-08-11-tarball-003"
+INSTALL_VERSION="2026-08-12-servermode-004"
 
 # --- pinned scanner release ---------------------------------------------
 # Bump these three together. SHA256s come from the release's checksums.txt:
@@ -115,6 +118,32 @@ LABELS="com.bumblebee.findings-baseline com.bumblebee.findings-project com.bumbl
 OLD_LABELS="com.bumblebee.baseline com.bumblebee.project"
 
 log() { /bin/echo "$(date -u +%FT%TZ) bumblebee-installer: $*" >&2; }
+
+# --- findings cadence: 4h default, overridable per-device by managed preference ---
+# Build machines, CI runners and anything else where a 4-hourly scan competes with real
+# work can be dropped to daily without a second copy of this script.
+#
+# WHY A MANAGED PREFERENCE AND NOT ON-DEVICE DETECTION: you cannot ask a Mac what Intune
+# thinks it is. `profiles show -type enrollment` returns (null) on an ADE-enrolled device,
+# so the enrolment profile name -- the obvious thing to branch on -- is simply not
+# readable from a script. The role has to be DELIVERED to the device. Ship a custom
+# settings profile (a macOSCustomAppConfiguration with the bundleId below) carrying
+# BumblebeeFindingsIntervalSeconds, and scope it with an assignment filter on
+# enrollmentProfileName. Intune evaluates the filter server-side and the device just
+# reads the answer out of /Library/Managed Preferences.
+#
+# Absent, unreadable or non-numeric => the default below. A freshly enrolled machine does
+# a cycle or two at the default before the profile lands; the next daily installer run
+# picks up the override.
+SERVERMODE_DOMAIN="/Library/Managed Preferences/com.example.servermode"   # __SET_ME__
+FINDINGS_INTERVAL=14400
+if [ -f "${SERVERMODE_DOMAIN}.plist" ]; then
+  _sm_val=$(/usr/bin/defaults read "$SERVERMODE_DOMAIN" BumblebeeFindingsIntervalSeconds 2>/dev/null || true)
+  case "$_sm_val" in
+    ''|*[!0-9]*) log "server-mode pref present but BumblebeeFindingsIntervalSeconds unusable ('$_sm_val'); keeping ${FINDINGS_INTERVAL}s" ;;
+    *) FINDINGS_INTERVAL="$_sm_val"; log "server mode: findings interval ${FINDINGS_INTERVAL}s" ;;
+  esac
+fi
 
 # --- preflight ---
 if [ "$(id -u)" -ne 0 ]; then
@@ -276,12 +305,20 @@ emit_plist() {
   /usr/sbin/chown root:wheel "$plist"; /bin/chmod 644 "$plist"
 }
 
-# findings: every 4h, RunAtLoad. Fast + bounded -- the dependency caches are
-# excluded here and covered by the daily inventory pass instead. `--` marks the
-# end of scan roots so the wrapper can tell roots from excludes.
-emit_plist com.bumblebee.findings-baseline  findings  baseline 10m 14400 yes \
+# findings: every $FINDINGS_INTERVAL (4h default), RunAtLoad. Fast + bounded --
+# the dependency caches are excluded here and covered by the daily inventory pass
+# instead. `--` marks the end of scan roots so the wrapper can tell roots from
+# excludes.
+#
+# RunAtLoad MUST stay `yes`, and it matters more once the interval can be raised:
+# this installer boots out and re-bootstraps all four daemons on EVERY run, and
+# Intune runs it daily, so each reload resets the StartInterval countdown. With
+# RunAtLoad=no, a daemon whose interval is >= the installer cadence can be starved
+# indefinitely and simply never scan. RunAtLoad is what guarantees roughly one
+# findings scan per installer cycle whatever the interval is.
+emit_plist com.bumblebee.findings-baseline  findings  baseline 10m "$FINDINGS_INTERVAL" yes \
   -- --exclude pkg/mod --exclude .cargo/registry
-emit_plist com.bumblebee.findings-project   findings  project  15m 14400 yes \
+emit_plist com.bumblebee.findings-project   findings  project  15m "$FINDINGS_INTERVAL" yes \
   $PROJECT_ROOTS
 # inventory: daily, full sweep including the caches, generous budget.
 emit_plist com.bumblebee.inventory-baseline inventory baseline 45m 86400 no

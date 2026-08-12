@@ -58,6 +58,9 @@ Intune deviceShellScript (root, daily)
                 │
                 ├── findings/baseline    every 4h   fast, bounded, no dependency caches
                 ├── findings/project     every 4h   your repo roots
+                │                        (4h is the default; per-device override
+                │                         to daily for build machines - see
+                │                         architecture.md)
                 ├── inventory/baseline   daily      everything, including the caches
                 └── inventory/project    daily      your repo roots, full inventory
                                 │
