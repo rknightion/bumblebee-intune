@@ -1,0 +1,20 @@
+project_name: "Bumblebee Intune"
+default_status: "To Do"
+statuses: ["To Do", "In Progress", "Parked", "Done"]
+definition_of_done:
+  - "docs manifest: every docs.toml nav target exists and every docs/*.md is in nav (the check in .github/workflows/ci.yml)"
+  - "python3 -m unittest discover -s src/endpoint -p 'test_*.py'"
+  - "shellcheck src/endpoint/*.sh src/intune/*.sh"
+labels: []
+date_format: yyyy-mm-dd
+max_column_width: 20
+auto_open_browser: true
+default_port: 6420
+remote_operations: false
+auto_commit: false
+filesystem_only: false
+zero_padded_ids: 4
+bypass_git_hooks: false
+check_active_branches: false
+active_branch_days: 30
+task_prefix: "bbi"
