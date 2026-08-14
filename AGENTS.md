@@ -58,7 +58,7 @@ or tenant ID, or a real per-user home directory path.
 
 **Never use `--notes` or `--plan` bare.** They *silently replace* the whole section. Use
 `--append-notes` and `--append-plan`. This is an open upstream bug, not a misunderstanding, and it
-destroys another session's writes with no warning. `.claude/hooks/backlog-guard.py` denies the bare
+destroys another session's writes with no warning. A global `PreToolUse` hook in the agent config denies the bare
 forms; do not work around it.
 
 **Finalize in one call**, so an interrupted agent cannot leave finished work looking unfinished:
