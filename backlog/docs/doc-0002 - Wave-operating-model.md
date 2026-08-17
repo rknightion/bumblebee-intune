@@ -84,7 +84,7 @@ it. A boundary with no escape hatch is a stop condition wearing a safety label.
 
 ## The docs manifest has cross-repo blast radius
 
-The published site is built by the `rknightion/m7kni-net-site` hub, **with `strict = true`**, from
+The published site is built by the `m7kni/m7kni-net-site` hub, **with `strict = true`**, from
 `docs.toml` plus `docs/`. A nav entry pointing at a file that does not exist fails the *whole fleet
 build* — every sibling repo's docs, not just this one. `.github/workflows/ci.yml` catches it here so
 it never reaches the hub.

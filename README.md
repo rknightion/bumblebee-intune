@@ -69,7 +69,7 @@ cd src/endpoint && python3 -m unittest test_catalog_select
 
 ## Layout notes
 
-The published site is built centrally by the [m7kni.io hub](https://github.com/rknightion/m7kni-net-site).
+The published site is built centrally by the [m7kni.io hub](https://github.com/m7kni/m7kni-net-site).
 This repo owns `docs/**/*.md` and `docs.toml` and nothing else about the site - `zensical.toml`, the
 brand stylesheet, the SEO template, the fonts and the social card are injected at build time and are
 gitignored here. A tracked copy of any of them is drift.

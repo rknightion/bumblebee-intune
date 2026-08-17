@@ -12,7 +12,7 @@ this file, so this is the one canonical copy — edit here, never there.
 - `src/grafana/` — alert rules, recording rules, and the tier-consistency checker that keeps the
   declared-only list identical across all three systems that duplicate it.
 - `docs/` — the published site. `docs.toml` is the nav manifest; the site itself is built by the
-  `rknightion/m7kni-net-site` hub, not here.
+  `m7kni/m7kni-net-site` hub, not here.
 
 ## Gate
 
