@@ -1,9 +1,9 @@
 ---
 id: doc-0003
-title: 'Closed work index (GitHub Issues, pre-Backlog)'
+title: Closed GitHub issues (pre-Backlog history index)
 type: other
 created_date: '2026-08-14 16:34'
-updated_date: '2026-08-14 16:34'
+updated_date: '2026-08-17 09:02'
 ---
 Every issue closed on `rknightion/bumblebee-intune` before the repository moved to Backlog.md on
 2026-08-14. One row per closed item, so the history is readable from the checkout alone.
