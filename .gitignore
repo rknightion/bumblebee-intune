@@ -9,7 +9,7 @@ __pycache__/
 *.py[cod]
 
 # zensical local build output. The published site is built independently by the
-# rknightion/m7kni-net-site hub from docs/ + docs.toml.
+# m7kni/m7kni-net-site hub from docs/ + docs.toml.
 /site/
 
 # Injected by the m7kni.io hub at build time — never commit these.
