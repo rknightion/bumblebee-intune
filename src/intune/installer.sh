@@ -220,7 +220,9 @@ if [ "$need_install" -eq 1 ]; then
     /bin/cp -R "$WORK/threat_intel" "$TMP_CUR"
     /usr/sbin/chown -R root:wheel "$TMP_CUR"
     /bin/rm -rf "$STAGED_CURATED.old"
-    [ -d "$STAGED_CURATED" ] && /bin/mv "$STAGED_CURATED" "$STAGED_CURATED.old" || true
+    if [ -d "$STAGED_CURATED" ]; then
+      /bin/mv "$STAGED_CURATED" "$STAGED_CURATED.old" || true
+    fi
     /bin/mv "$TMP_CUR" "$STAGED_CURATED"
     /bin/rm -rf "$STAGED_CURATED.old"
   fi
@@ -327,11 +329,15 @@ emit_plist com.bumblebee.inventory-project  inventory project  30m 86400 no \
 
 # --- clean up legacy daemons, then (re)load the four ---
 for l in $OLD_LABELS; do
-  /bin/launchctl print "system/$l" >/dev/null 2>&1 && /bin/launchctl bootout "system/$l" 2>/dev/null || true
+  if /bin/launchctl print "system/$l" >/dev/null 2>&1; then
+    /bin/launchctl bootout "system/$l" 2>/dev/null || true
+  fi
   /bin/rm -f "$DAEMON_DIR/$l.plist"
 done
 for l in $LABELS; do
-  /bin/launchctl print "system/$l" >/dev/null 2>&1 && /bin/launchctl bootout "system/$l" 2>/dev/null || true
+  if /bin/launchctl print "system/$l" >/dev/null 2>&1; then
+    /bin/launchctl bootout "system/$l" 2>/dev/null || true
+  fi
   /bin/launchctl bootstrap system "$DAEMON_DIR/$l.plist"
   log "loaded $l"
 done

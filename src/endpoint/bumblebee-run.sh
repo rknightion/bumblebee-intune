@@ -63,7 +63,10 @@ rm -rf "$DB_DIR/catalog/.stage.${MODE}_${PROFILE}."* 2>/dev/null || true
 [ -r "$ENV_FILE" ] || { echo "$(date -u +%FT%TZ) ERROR: $ENV_FILE missing" >> "$LOG"; exit 1; }
 # shellcheck source=/dev/null
 . "$ENV_FILE"
-[ -n "${LOKI_URL:-}" ] && [ -n "${LOKI_TOKEN:-}" ] || { echo "$(date -u +%FT%TZ) ERROR: LOKI creds unset" >> "$LOG"; exit 1; }
+if [ -z "${LOKI_URL:-}" ] || [ -z "${LOKI_TOKEN:-}" ]; then
+  echo "$(date -u +%FT%TZ) ERROR: LOKI creds unset" >> "$LOG"
+  exit 1
+fi
 
 DEVICE_ID="$(/usr/sbin/ioreg -d2 -c IOPlatformExpertDevice 2>/dev/null | /usr/bin/awk -F'"' '/IOPlatformUUID/{print $4; exit}')"
 export INTUNE_DEVICE_ID="${DEVICE_ID:-unknown}"
@@ -126,8 +129,10 @@ except Exception: print(-1)' 2>/dev/null || echo -1)
 fi
 
 push_one() {
-  [ -x "$LOKI_PUSH" ] && /usr/bin/python3 "$LOKI_PUSH" --url "$LOKI_URL" --token "$LOKI_TOKEN" \
-    --profile "$PROFILE" --mode "$MODE" --hostname "$HOSTNAME_SHORT" "$1" >>"$LOG" 2>&1 || true
+  if [ -x "$LOKI_PUSH" ]; then
+    /usr/bin/python3 "$LOKI_PUSH" --url "$LOKI_URL" --token "$LOKI_TOKEN" \
+      --profile "$PROFILE" --mode "$MODE" --hostname "$HOSTNAME_SHORT" "$1" >>"$LOG" 2>&1 || true
+  fi
 }
 
 emit_health() {  # <status> [detail]
@@ -191,7 +196,9 @@ while [ "$rank" -lt 3 ]; do
          --max-duration 30s --output file --output-file /dev/null >/dev/null 2>>"$LOG"; then
       CAT_SUMMARY="$out"; CAT_OK=1
       rm -rf "$CAT_DIR.old"
-      [ -d "$CAT_DIR" ] && /bin/mv "$CAT_DIR" "$CAT_DIR.old" || true
+      if [ -d "$CAT_DIR" ]; then
+        /bin/mv "$CAT_DIR" "$CAT_DIR.old" || true
+      fi
       /bin/mv "$STAGING" "$CAT_DIR"; rm -rf "$CAT_DIR.old"
       break
     fi
