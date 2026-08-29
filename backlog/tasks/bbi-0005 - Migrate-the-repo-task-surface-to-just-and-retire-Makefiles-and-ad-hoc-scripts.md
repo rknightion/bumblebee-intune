@@ -1,10 +1,10 @@
 ---
 id: BBI-0005
 title: Migrate the repo task surface to just and retire Makefiles and ad-hoc scripts
-status: Parked
+status: Done
 assignee: []
 created_date: '2026-08-28 19:18'
-updated_date: '2026-08-29 14:02'
+updated_date: '2026-08-29 18:18'
 labels:
   - 'wave:2-fleet'
 dependencies: []
@@ -451,6 +451,8 @@ is correct and matches existing repo convention; every other `backlog/` file mus
 Parked after hosted CI runs at the two migration commits failed in `just check` while the local gate passed. The GitHub-hosted ShellCheck 0.9.0 behavior was reproduced locally: it reports six pre-existing SC2015 findings across `src/endpoint/bumblebee-run.sh` and `src/intune/installer.sh`. The staged, uncommitted source fix rewrites those boolean chains as explicit `if` blocks without suppressing lint or changing the gate. Verified: `sh -n` on both scripts, exact ShellCheck 0.9.0, and `just check` (7 tests; docs manifest OK).
 
 Resume boundary: wait for the CodeRabbit quota to become available, run `coderabbit review --agent` against the staged two-file source fix, address any findings, commit and push only those named files, then prove a green `ci-success` run at the resulting exact SHA before marking this task Done. CodeRabbit returned rate-limit responses on the permitted retries; the final response advertised a new four-minute hold.
+
+Unparked and completed 2026-08-29. CodeRabbit returned zero findings. The staged ShellCheck SC2015 fixes landed. Migration at 05b254f; exact-head CI green.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
