@@ -14,20 +14,23 @@ this file, so this is the one canonical copy — edit here, never there.
 - `docs/` — the published site. `docs.toml` is the nav manifest; the site itself is built by the
   `m7kni/m7kni-net-site` hub, not here.
 
-## Gate
+## Task interface
 
-Run all three before calling anything done. They need no credentials and make no network calls.
+This repo's task surface is a `justfile`. Discover it, don't guess it:
 
-```bash
-python3 -m unittest discover -s src/endpoint -p 'test_*.py'
-shellcheck src/endpoint/*.sh src/intune/*.sh
-```
+    just --list                        # human-readable
+    just --dump --dump-format json     # machine-readable
+    just --show <recipe>               # what a recipe actually runs
 
-Plus the docs manifest check in `.github/workflows/ci.yml` — every `docs.toml` nav target must
-exist and every `docs/*.md` must appear in nav. The hub builds with `strict = true`, so a nav entry
-pointing at a missing file fails the whole fleet build, not just this repo.
+- `just check` is the full gate and is exactly what CI enforces. It must pass before you commit.
+- Prefer `just <recipe>` over the underlying tool. If you are typing `pytest` or `shellcheck`, you
+  want `just test` or `just lint`.
+- Run `just` with stdin from /dev/null. Recipes marked `[confirm]` are destructive — stop and ask
+  before running one; never pass `--yes` or `JUST_YES=1`.
+- If a task you need does not exist, add a recipe with a `#` doc comment and a `[group(...)]`
+  rather than running a bare command.
 
-These are `definition_of_done` in `backlog/config.yml`, so every new task inherits them.
+This is `definition_of_done` in `backlog/config.yml`, so every new task inherits it.
 
 ## Tracker
 

@@ -1,10 +1,10 @@
 ---
 id: BBI-0005
 title: Migrate the repo task surface to just and retire Makefiles and ad-hoc scripts
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-28 19:18'
-updated_date: '2026-08-29 10:42'
+updated_date: '2026-08-29 13:25'
 labels:
   - 'wave:2-fleet'
 dependencies: []
@@ -436,6 +436,14 @@ is correct and matches existing repo convention; every other `backlog/` file mus
 - [ ] #2 python3 -m unittest discover -s src/endpoint -p 'test_*.py'
 - [ ] #3 shellcheck src/endpoint/*.sh src/intune/*.sh
 <!-- DOD:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Inventory the current scripts, CI, hook surfaces, and references; preserve every KEEP-classified program and shared reusable workflow.
+2. Fix the pre-existing shellcheck defect, add the frozen justfile task surface and docs validator, then redirect CI and human-facing task instructions.
+3. Run the required local gates and reference/hook audits; commit named paths, push main, and prove the exact final SHA in GitHub Actions before atomic finalization.
+<!-- SECTION:PLAN:END -->
 
 ## Comments
 

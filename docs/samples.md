@@ -21,7 +21,7 @@ Runs on the managed Mac. POSIX `sh` and stdlib Python 3 only.
 | [`loki-push.py`](https://github.com/rknightion/bumblebee-intune/blob/main/src/endpoint/loki-push.py) | Ships NDJSON. Ingestion-time timestamps, paced. |
 
 ```sh
-cd src/endpoint && python3 -m unittest test_catalog_select
+just test
 ```
 
 `bumblebee-run.sh` is the file to read first. It is where the difference between "a scanner runs on

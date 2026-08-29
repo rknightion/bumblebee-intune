@@ -64,7 +64,7 @@ deliberately placeholders.
 Run the endpoint tests:
 
 ```sh
-cd src/endpoint && python3 -m unittest test_catalog_select
+just test
 ```
 
 ## Layout notes

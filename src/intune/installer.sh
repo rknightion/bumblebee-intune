@@ -319,11 +319,11 @@ emit_plist() {
 emit_plist com.bumblebee.findings-baseline  findings  baseline 10m "$FINDINGS_INTERVAL" yes \
   -- --exclude pkg/mod --exclude .cargo/registry
 emit_plist com.bumblebee.findings-project   findings  project  15m "$FINDINGS_INTERVAL" yes \
-  $PROJECT_ROOTS
+  "$PROJECT_ROOTS"
 # inventory: daily, full sweep including the caches, generous budget.
 emit_plist com.bumblebee.inventory-baseline inventory baseline 45m 86400 no
 emit_plist com.bumblebee.inventory-project  inventory project  30m 86400 no \
-  $PROJECT_ROOTS
+  "$PROJECT_ROOTS"
 
 # --- clean up legacy daemons, then (re)load the four ---
 for l in $OLD_LABELS; do

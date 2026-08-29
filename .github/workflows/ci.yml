@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-docs:
-    name: Validate docs manifest
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
@@ -23,63 +23,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
+        with:
+          just-version: '1.58.0'
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.x'
-      # The hub builds with strict = true, so a nav entry pointing at a file that
-      # does not exist fails the whole fleet build, not just this child. Catch it here.
-      - name: docs.toml parses and every nav target exists
-        run: |
-          python - <<'PYEOF'
-          import pathlib
-          import sys
-          import tomllib
-
-          manifest = pathlib.Path("docs.toml")
-          docs = pathlib.Path("docs")
-          errors = []
-
-          with manifest.open("rb") as fh:
-              cfg = tomllib.load(fh)
-
-          def targets(value):
-              if isinstance(value, str):
-                  yield value
-              elif isinstance(value, list):
-                  for item in value:
-                      yield from targets(item)
-              elif isinstance(value, dict):
-                  for item in value.values():
-                      yield from targets(item)
-
-          seen = set()
-          for entry in cfg.get("site", {}).get("nav", []):
-              for target in targets(entry):
-                  seen.add(target)
-                  if not (docs / target).is_file():
-                      errors.append(f"nav points at docs/{target}, which does not exist")
-
-          for page in sorted(docs.rglob("*.md")):
-              rel = page.relative_to(docs).as_posix()
-              if rel.startswith(("includes/", "superpowers/")) or rel == "404.md":
-                  continue
-              if rel not in seen:
-                  errors.append(f"docs/{rel} exists but is not in the nav")
-
-          for key in ("name", "description", "author"):
-              if not cfg.get("site", {}).get(key):
-                  errors.append(f"[site].{key} is missing or empty")
-
-          if errors:
-              print("\n".join(f"  - {e}" for e in errors))
-              sys.exit(1)
-          print(f"docs.toml OK - {len(seen)} pages in nav")
-          PYEOF
+      - name: just check
+        run: just check
   ci-success:
     name: ci-success
     runs-on: ubuntu-latest
     if: always()
-    needs: [validate-docs]
+    needs: [ci]
     steps:
       - name: Fail if any required job did not pass
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}

@@ -2,9 +2,7 @@ project_name: "Bumblebee Intune"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Parked", "Done"]
 definition_of_done:
-  - "docs manifest: every docs.toml nav target exists and every docs/*.md is in nav (the check in .github/workflows/ci.yml)"
-  - "python3 -m unittest discover -s src/endpoint -p 'test_*.py'"
-  - "shellcheck src/endpoint/*.sh src/intune/*.sh"
+  - "just check"
 labels: []
 date_format: yyyy-mm-dd
 max_column_width: 20
