@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Product-specific additions to the central CodeRabbit defaults.
+# Keep inheritance enabled; shared review policy lives in the owner/coderabbit repository.
+inheritance: true
+reviews:
+  path_instructions:
+  - path: src/intune/**
+    instructions: >-
+      These scripts execute as root on managed macOS devices. Preserve pinned release acquisition, checksum
+      verification, root ownership, atomic replacement, idempotent upgrades, LaunchDaemon cleanup, and
+      the split between frequent findings and full inventory. Bump scanner version, architecture checksums
+      and install version together. Never execute a user-writable binary as root. Treat embedded telemetry
+      credentials as push-only deployment inputs and prevent them from reaching logs or tracked concrete
+      values.
+  - path: src/endpoint/**
+    instructions: >-
+      Preserve schema-coherent catalog selection and probe the selected set with the deployed scanner
+      before scanning. Rank sets by entry coverage, report schema conflicts, and represent no usable set
+      or a failed scan as unavailable rather than clean. For Loki delivery, preserve bounded compressed
+      chunks, ingestion-time timestamps, retry-after handling, cardinality-safe labels, partial-failure
+      visibility, and a nonzero result when every chunk fails. Keep embedded helper copies synchronized
+      with their installer source.
+  - path: src/grafana/**
+    instructions: >-
+      Review alert and recording rules against the exact records emitted by endpoint scripts. Preserve
+      missing-data versus zero semantics, catalog-age cadence assumptions, label sets and cardinality.
+      Any declared-only tier or source list duplicated across rules and scripts must remain identical
+      and pass the repository consistency checker.
+knowledge_base:
+  linked_repositories:
+  - repository: rknightion/bumblebee-catalog
+    instructions: >-
+      Use the producer repository to verify catalog-latest asset names, metadata shape, schema version
+      and publication cadence consumed by endpoints.
