@@ -20,7 +20,8 @@ credentials and makes no network calls.
 
 **The `infra` group mutates live systems** - `alerts-apply` writes the Grafana Bumblebee Alerts
 folder, `pppc-deploy` / `pppc-delete` write Intune. `alerts-plan` is the dry-run diff. Never run an
-`infra` recipe to verify a code change.
+`infra` recipe to verify a code change. `alerts-apply` and `pppc-delete` are `[confirm]`-marked;
+stop and ask before running one, and never pass `--yes` or `JUST_YES=1` to skip the prompt.
 
 **`docs/` is not built here.** The `m7kni/m7kni-net-site` hub builds and publishes it; `docs.toml` is
 the nav manifest and `just docs-check` mirrors the hub's strict build, so a page added without a nav
@@ -47,3 +48,18 @@ always fires is a sweep nobody reads.
 Tasks are `bbi-NNNN`. Read the **Agent fan-out protocol (canonical)** doc before designing a wave,
 and the **Wave operating model** doc for this project's own rules
 (`backlog doc list --plain`, `backlog doc view <id> --plain`).
+
+Backlog CLI traps, each of which loses data silently at exit 0:
+
+- **Never `--notes`, `--plan` or `--final-summary` bare.** Each REPLACES its whole section, wiping
+  another session's writes with no warning. Use `--append-notes`, `--append-plan`,
+  `--append-final-summary`. A hook in the agent config denies the bare forms.
+- **Never hand-edit task, draft, doc, decision or milestone markdown.** Section boundaries are
+  HTML-comment markers; break one and the section is dropped silently - still in the file, invisible
+  to the CLI, until the next write destroys it for real. There is no repair command; `backlog doctor`
+  only fixes duplicate task IDs. `backlog/config.yml` is the one deliberate exemption, because
+  list-valued keys cannot be set through `backlog config set`.
+- **Never let two agents edit the same task.** The concurrent-edit fix covers the edit funnel but not
+  reorder, draft saves, the TUI edit path, `doc update` or decision updates.
+- **Finalize in one call**, so an interrupted run cannot leave finished work looking unfinished:
+  `backlog task edit bbi-0007 --check-ac 1 --check-ac 2 -s Done`.
