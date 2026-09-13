@@ -28,6 +28,11 @@ reviews:
       and pass the repository consistency checker.
 knowledge_base:
   linked_repositories:
+  - repository: m7kni/m7kni-net-site
+    instructions: >-
+      Documentation hub. This repository dispatches documentation changes to the hub, which clones the
+      docs source and builds it. Check docs_path, config_file and the dispatch payload against this
+      repository's entry in the hub's docs-repos.json manifest.
   - repository: rknightion/bumblebee-catalog
     instructions: >-
       Use the producer repository to verify catalog-latest asset names, metadata shape, schema version
