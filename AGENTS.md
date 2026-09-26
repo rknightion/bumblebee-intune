@@ -3,6 +3,11 @@
 Reference Intune deployment for Bumblebee: configuration profiles, endpoint scripts, and the Grafana
 alerting/recording rules that consume what they emit.
 
+## Task interface
+
+`just check` (fmt-check, lint, test, docs-check) is the gate and must pass before you commit. There
+is no `just ci` recipe. Note it does not run `tier-check` - see the trap below.
+
 ## Traps
 
 **`just check` does not run `tier-check`.** The installed-vs-declared `source_type` split is a regex
