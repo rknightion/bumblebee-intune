@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -69,6 +70,19 @@ DECLARED_ONLY = "|".join([
     "rubygems-gemfile-lock", "composer-lock", "go-mod", "go-sum", "skill-lock",
     "mcp-config",
 ])
+
+# Always-on hosts that must never go quiet, for the BumblebeeHostSilent rule. Supply
+# their endpoint.device_id values (as they appear in the scan_summary JSON) in the
+# BUMBLEBEE_SERVER_DEVICE_IDS environment variable, comma-separated. Left empty, the
+# rule is not emitted at all. Key on device_id, NOT the `host` label, which can flap
+# between hostname spellings for one device. Laptops must stay out of this list: they
+# are legitimately switched off and would page. Find ids with:
+#   gcx --context <your-gcx-context> logs query 'sum by (host, did) (count_over_time(
+#     {source="bumblebee", record_type="scan_summary"} | json did="endpoint.device_id" [14d]))'
+SERVER_DEVICE_IDS = [d.strip() for d in os.environ.get("BUMBLEBEE_SERVER_DEVICE_IDS", "").split(",")
+                     if d.strip()]
+SERVER_DEVICE_RE = "|".join(SERVER_DEVICE_IDS)
+HOST_SILENT_JSON = '| json device_id="endpoint.device_id", hostname="endpoint.hostname" '
 
 FINDING_FIELDS = ('| json ecosystem="ecosystem", package_name="package_name", version="version", '
                   'catalog_id="catalog_id", root_kind="root_kind", source_type="source_type" ')
@@ -343,6 +357,51 @@ RULES = [
         panel="505",
     ),
 ]
+
+# BumblebeeHostSilent only exists when a server allowlist is configured; see SERVER_DEVICE_IDS.
+if SERVER_DEVICE_IDS:
+    RULES.append(
+        rule(
+            uid="bumblebee-host-silent",
+            title="BumblebeeHostSilent",
+            lookback="336h0m0s",
+            # Server device_ids seen in scan_summary within 14d, minus those seen in the
+            # last 48h. `max by` collapses the host/profile/mode streams to one series per
+            # device (+ its hostname, for the summary); `unless on (device_id)` is a set
+            # difference keyed on the device, never the flapping `host` label. Empty =
+            # every server reported recently = healthy (noDataState Ok).
+            expr=(
+                f'max by (device_id, hostname) (count_over_time({{source="bumblebee", record_type="scan_summary"}} '
+                f'{HOST_SILENT_JSON}| device_id=~"{SERVER_DEVICE_RE}" [14d])) '
+                'unless on (device_id) '
+                f'max by (device_id) (count_over_time({{source="bumblebee", record_type="scan_summary"}} '
+                f'{HOST_SILENT_JSON}| device_id=~"{SERVER_DEVICE_RE}" [48h]))'
+            ),
+            condition="${A} > 0",
+            severity="warning",
+            summary=("bumblebee: server {{ $labels.hostname }} (device {{ $labels.device_id }}) has sent "
+                     "no scan_summary for 48h+ - the host has gone silent"),
+            description=(
+                "This always-on server Mac pushed scan_summary records within the last 14d but none in "
+                "the last 48h. A switched-off LAPTOP is deliberately out of scope (every other rule is "
+                "NoData Ok for that reason); this rule is scoped to the BUMBLEBEE_SERVER_DEVICE_IDS allowlist in "
+                "src/grafana/alert-rules.py, hosts that should never be quiet.\n\n"
+                "Host: {{ $labels.hostname }}\nDevice id: {{ $labels.device_id }}\n\n"
+                "Why it exists: BumblebeeHealthTelemetryMissing only flags hosts that are STILL scanning, "
+                "and every other rule is NoData Ok, so a server that stops reporting entirely (wiped, "
+                "daemon unloaded, network or Alloy path broken, Intune script not re-run) pages nothing.\n\n"
+                "Keyed on endpoint.device_id from the scan_summary JSON, not the `host` label, which can flap "
+                "between spellings for one device. The hostname shown is the last one "
+                "reported. 14d memory means the alert clears by itself 14d after the last scan if the "
+                "host is intentionally gone: remove it from BUMBLEBEE_SERVER_DEVICE_IDS to retire it sooner.\n\n"
+                "Check on the host: launchctl print system | grep -i bumblebee; "
+                "/var/log/bumblebee/run-*.err; cat /var/db/bumblebee/install.version. If the host was "
+                "reimaged, re-run the Intune installer and confirm the device_id is unchanged."),
+            for_="1h",
+            panel="101",
+            interval="10m",
+        )
+    )
 
 
 def gcx_api(path, method=None, body=None):
