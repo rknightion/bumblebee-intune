@@ -50,6 +50,6 @@ always fires is a sweep nobody reads.
 
 ## Tracker
 
-Tasks are `bbi-NNNN`. Read the **Agent fan-out protocol (canonical)** doc before designing a wave,
-and the **Wave operating model** doc for this project's own rules
-(`backlog doc list --plain`, `backlog doc view <id> --plain`).
+Tasks are `bbi-NNNN` (`backlog doc list --plain`, `backlog doc view <id> --plain`).
+
+Loops: the protocol lives in `~/repos/agent-docs/sources/loop/` (this board's "Loop protocol pointer" doc points there); this repository's loop facts are in `LOOP.md`.
