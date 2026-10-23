@@ -12,7 +12,7 @@ jobs:
       packages: read
       actions: read
       contents: read
-    uses: rknightion/.github/.github/workflows/codeql.yml@223d9483075f648075df1a806c2ad4db42101a7f # v1.25.25
+    uses: rknightion/.github/.github/workflows/codeql.yml@42ebc6a7fa65c556994b27956dc176d245cceaba # v1.25.26
     with:
       # Docs-only for now. Add the real language here when code samples land.
       languages: '[{"language":"actions","build-mode":"none"}]'
