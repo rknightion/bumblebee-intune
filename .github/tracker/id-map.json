@@ -1,0 +1,30 @@
+{
+ "held": {},
+ "issues": {
+  "BBI-0001": {
+   "number": 54,
+   "url": "https://github.com/rknightion/bumblebee-intune/issues/54"
+  },
+  "BBI-0002": {
+   "number": 55,
+   "url": "https://github.com/rknightion/bumblebee-intune/issues/55"
+  },
+  "BBI-0003": {
+   "number": 56,
+   "url": "https://github.com/rknightion/bumblebee-intune/issues/56"
+  },
+  "BBI-0004": {
+   "number": 57,
+   "url": "https://github.com/rknightion/bumblebee-intune/issues/57"
+  },
+  "BBI-0005": {
+   "number": 58,
+   "url": "https://github.com/rknightion/bumblebee-intune/issues/58"
+  }
+ },
+ "prefix": "BBI",
+ "repo": "rknightion/bumblebee-intune",
+ "schema": 1,
+ "source_sha": "1eedb0133523b94a89de5725576369816565ae4e",
+ "synthetic": []
+}

@@ -3,10 +3,26 @@ tier: routine
 gate: just check
 ci-required: ci-success
 grafana-stack: none
+tracker: github
+landing: pr
 
 Public reference deployment: the scripts are the deliverable and the tenant is not a test rig. No
 real tenant, device, user or Grafana identifier in any tracked file or loop artifact. `just check`
 is `fmt-check lint test docs-check`; it does not run `tier-check`. There is no `just ci` recipe.
+Issues are public: no tenant, device, user or Grafana identifier in any issue, pull request or doc.
+
+The tracker working model is `~/repos/agent-docs/docs/github-tracker.md` (maintainers only).
+
+## Queue
+
+- The queue is `just tracker queue`: open issues at Project Status Ready on the rknightion Project.
+- A charter selects work by labels (`type:task`, `type:bug`, `type:feature`, `needs-owner`,
+  `needs-triage`) and Project fields (Status, Priority, Effort, Lane). Never queue a `needs-owner` or
+  `needs-triage` issue.
+- Only the root writes issues and the Project, through `just tracker`. A lane returns the status and
+  the AC ticks it wants.
+- A queue row names the issue as `#N`. A legacy board id (`BBI-0001`) resolves with `just issue <ID>`;
+  `.github/tracker/id-map.json` is the map.
 
 ## Credentials
 
@@ -38,7 +54,7 @@ is `fmt-check lint test docs-check`; it does not run `tier-check`. There is no `
 - The Grafana Git-Sync working copy holding the fleet dashboard JSON is single-writer, root only.
 - `gcx` queries against live Loki are read-only and allowed, through one lane at a time.
 - Root-owned, never edited by a feature lane: `docs.toml`, `AGENTS.md`, `CLAUDE.md`,
-  `backlog/config.yml`, `.github/workflows/*`.
+  `.github/workflows/*`.
 
 ## Lane brief
 
