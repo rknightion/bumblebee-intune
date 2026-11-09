@@ -34,22 +34,25 @@ entry fails the gate.
 
 ## No real identifiers, anywhere
 
-`backlog/` is committed, so tasks and docs must never carry an email address, handle, UPN, tenant or
-account ID, device name or serial, Intune object GUID, Grafana stack or tenant ID, address,
-coordinate, or a real per-user home path. Write the shape, not the instance: "the second device in
-the pilot ring", `<tenant>/<device>/<policy>`. Aggregate counts, timings and structural findings are
-fine. Sweep before committing:
+Issues, pull request text and everything under `.github/tracker/` are public, so none of them may
+carry an email address, handle, UPN, tenant or account ID, device name or serial, Intune object
+GUID, Grafana stack or tenant ID, address, coordinate, or a real per-user home path. Write the
+shape, not the instance: "the second device in the pilot ring", `<tenant>/<device>/<policy>`.
+Aggregate counts, timings and structural findings are fine.
 
-```bash
-grep -rniE "[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|logs-prod-[0-9]{3}|prometheus-prod-[0-9]+|tempo-prod-[0-9]+|/Users/(?!\*)[a-z]+|[A-Z0-9]{10,12}\b.*serial|\.local\b" backlog/ && echo "IDENTIFIERS FOUND"
-```
+`rknightion`, `m7kni-net-site` and `github.com/rknightion/...` are public repository slugs that
+already appear throughout tracked source and docs; they are fine.
 
-`rknightion`, `m7kni-net-site` and `github.com/rknightion/...` are deliberately not matched: they are
-public repository slugs that already appear throughout tracked source and docs, and a sweep that
-always fires is a sweep nobody reads.
+## Tracking work
 
-## Tracker
+Work is tracked in this repository's GitHub issues; they are the only queue. Do not add a checklist
+file beside them.
 
-Tasks are `bbi-NNNN` (`backlog doc list --plain`, `backlog doc view <id> --plain`).
-
-Loops: the protocol lives in `~/repos/agent-docs/sources/loop/` (this board's "Loop protocol pointer" doc points there); this repository's loop facts are in `LOOP.md`.
+- A pull request body says how it relates to an issue, on a line of its own: `Closes #N` with the
+  `Acceptance evidence` table from `.github/pull_request_template.md` (one row for each acceptance
+  criterion of that issue), `Refs #N` when it only relates to one, or `Task: none, <reason>`.
+- A pull request that changes `.github/workflows/` or `.github/actions/` carries no closing keyword:
+  write `Task: none, <reason>`, with `Refs #N` beside it if you like.
+- Contributors never need the project board or the tracker tooling; a maintainer handles both.
+- Older commits, docs and tests cite legacy board ids such as `BBI-0001`. `just issue <ID>` prints
+  the issue each one became; `.github/tracker/id-map.json` is the map.
