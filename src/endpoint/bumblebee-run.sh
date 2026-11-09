@@ -8,7 +8,7 @@
 # curated defaults are expanded with --all-users. Args after `--` go through
 # to `bumblebee scan` verbatim (used for --exclude).
 #
-# Embedded into installer.sh at deploy time; edit deploy/bumblebee-run.sh.
+# Embedded into installer.sh at deploy time; edit src/endpoint/bumblebee-run.sh.
 set -eu
 
 MODE="${1:?mode required (findings|inventory)}"

@@ -7,7 +7,7 @@ drops while the scan_time stays available in the JSON body. Shipping is paced
 to a target COMPRESSED throughput (well under the tenant rate limit) instead
 of a blind sleep.
 
-Embedded into installer.sh at deploy time; edit deploy/loki_push.py.
+Embedded into installer.sh at deploy time; edit src/endpoint/loki-push.py.
 """
 from __future__ import annotations
 import argparse, gzip, json, sys, time, urllib.error, urllib.request
