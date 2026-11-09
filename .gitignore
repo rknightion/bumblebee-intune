@@ -2,7 +2,8 @@
 docs/superpowers/
 
 # Claude Code repo-local config. `settings.json` and `hooks/` ARE tracked — they
-.claude/
+.claude/*
+!.claude/skills/
 
 # Python bytecode from running the sample scripts or their tests
 __pycache__/
