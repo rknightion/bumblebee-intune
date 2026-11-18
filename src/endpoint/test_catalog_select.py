@@ -7,7 +7,7 @@ versions and exits 2 before scanning, so the staging step MUST hand it a
 single coherent group. These cases pin that behaviour.
 
 Run: python3 -m unittest test_catalog_select   (from src/endpoint/)
-     (or: python3 -m unittest discover -s deploy -p 'test_*.py')
+     (or: python3 -m unittest discover -s src/endpoint -p 'test_*.py')
 """
 
 from __future__ import annotations
