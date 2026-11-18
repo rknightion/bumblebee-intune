@@ -1,0 +1,48 @@
+name: PR metadata
+run-name: PR ${{ github.event.pull_request.number }} metadata
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: caller-pr-metadata-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  metadata:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: rknightion/.github/.github/workflows/pr-metadata.yml@ef8e9fe4c0f466215c6045f85dd9fcaf70ecf6c8 # v1.30.7
+    with:
+      runs-on: ubuntu-latest
+      harden: true
+
+  metadata-ac-evidence:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: rknightion/.github/.github/workflows/ac-evidence.yml@8f00b7fb896191e598f12ed565395697c539add1 # v1.26.9
+
+  pr-metadata-success:
+    name: pr-metadata-success
+    if: ${{ always() }}
+    needs: [metadata, metadata-ac-evidence]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require both metadata checks to pass
+        env:
+          METADATA_RESULT: ${{ needs.metadata.result }}
+          ACCEPTANCE_RESULT: ${{ needs.metadata-ac-evidence.result }}
+        run: |
+          if [[ "$METADATA_RESULT" != success || "$ACCEPTANCE_RESULT" != success ]]; then
+            echo "PR metadata: $METADATA_RESULT, acceptance evidence: $ACCEPTANCE_RESULT"
+            exit 1
+          fi
