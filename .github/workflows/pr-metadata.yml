@@ -23,7 +23,11 @@ jobs:
       runs-on: ubuntu-latest
       harden: true
 
-  metadata-ac-evidence:
+  # A pull request that closes an issue shows evidence for each of its acceptance criteria. Checks
+  # only pull requests with a closing keyword (enforce-all-prs: false), because this repository takes
+  # outside and bot pull requests. Check run: `ac-evidence / Acceptance evidence`.
+  ac-evidence:
+    # The reusable fails on any event but pull_request; this workflow runs on pull requests only.
     permissions:
       contents: read
       issues: read
@@ -33,14 +37,14 @@ jobs:
   pr-metadata-success:
     name: pr-metadata-success
     if: ${{ always() }}
-    needs: [metadata, metadata-ac-evidence]
+    needs: [metadata, ac-evidence]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Require both metadata checks to pass
         env:
           METADATA_RESULT: ${{ needs.metadata.result }}
-          ACCEPTANCE_RESULT: ${{ needs.metadata-ac-evidence.result }}
+          ACCEPTANCE_RESULT: ${{ needs.ac-evidence.result }}
         run: |
           if [[ "$METADATA_RESULT" != success || "$ACCEPTANCE_RESULT" != success ]]; then
             echo "PR metadata: $METADATA_RESULT, acceptance evidence: $ACCEPTANCE_RESULT"
