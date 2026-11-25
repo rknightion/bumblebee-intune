@@ -89,12 +89,6 @@ that work; nothing here depends on it.
 `just check` (fmt-check, lint, test, docs-check) is the gate and must pass before you commit. There
 is no `just ci` recipe. Note it does not run `tier-check` - see the trap below.
 
-## Cursor Cloud specific instructions
-
-Cursor Cloud runs `just setup </dev/null` to verify the preinstalled Python and ShellCheck. Run
-`just check </dev/null` for both fast and full local validation. Endpoint deployment requires
-macOS and an authorized Intune tenant. Grafana operations require separate authorized access.
-
 ## Traps
 
 **`just check` does not run `tier-check`.** The installed-vs-declared `source_type` split is a regex
